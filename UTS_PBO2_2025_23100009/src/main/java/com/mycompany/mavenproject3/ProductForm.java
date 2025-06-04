@@ -1,4 +1,3 @@
-
 package com.mycompany.mavenproject3;
 
 import java.awt.BorderLayout;
@@ -39,49 +38,49 @@ public class ProductForm extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
 
-        
+        // Form Panel
         JPanel leftPanel = new JPanel(new GridBagLayout());
         leftPanel.setBorder(BorderFactory.createTitledBorder("Form Produk"));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-      
+        // Kode Barang
         gbc.gridx = 0; gbc.gridy = 0;
         leftPanel.add(new JLabel("Kode Barang:"), gbc);
         gbc.gridx = 1;
         codeField = new JTextField();
         leftPanel.add(codeField, gbc);
 
-        
+        // Nama Barang
         gbc.gridx = 0; gbc.gridy++;
         leftPanel.add(new JLabel("Nama Barang:"), gbc);
         gbc.gridx = 1;
         nameField = new JTextField();
         leftPanel.add(nameField, gbc);
 
-      
+        // Kategori
         gbc.gridx = 0; gbc.gridy++;
         leftPanel.add(new JLabel("Kategori:"), gbc);
         gbc.gridx = 1;
         categoryField = new JComboBox<>(new String[]{"Coffee", "Dairy", "Juice", "Soda", "Tea"});
         leftPanel.add(categoryField, gbc);
 
-       
+        // Harga Jual
         gbc.gridx = 0; gbc.gridy++;
         leftPanel.add(new JLabel("Harga Jual:"), gbc);
         gbc.gridx = 1;
         priceField = new JTextField();
         leftPanel.add(priceField, gbc);
 
-        
+        // Stok Tersedia
         gbc.gridx = 0; gbc.gridy++;
         leftPanel.add(new JLabel("Stok Tersedia:"), gbc);
         gbc.gridx = 1;
         stockField = new JTextField();
         leftPanel.add(stockField, gbc);
 
-       
+        // Tombol
         gbc.gridx = 0; gbc.gridy++;
         gbc.gridwidth = 2;
         JPanel buttonPanel = new JPanel();
@@ -95,37 +94,54 @@ public class ProductForm extends JFrame {
 
         add(leftPanel, BorderLayout.WEST);
 
-       
-        tableModel = new DefaultTableModel(new String[]{"Kode", "Nama", "Kategori", "Harga", "Stok"}, 0);
+        // Tabel Produk
+       tableModel = new DefaultTableModel(new String[]{"Kode", "Nama", "Kategori", "Harga", "Stok"}, 0) {
+     @Override
+        public boolean isCellEditable(int row, int column) {
+        return false; // semua sel tidak bisa diedit langsung
+    }
+};
         drinkTable = new JTable(tableModel);
         loadProductData();
         JScrollPane scrollPane = new JScrollPane(drinkTable);
         scrollPane.setBorder(BorderFactory.createTitledBorder("Daftar Produk"));
         add(scrollPane, BorderLayout.CENTER);
 
-     
+        // Event listeners
         addButton.addActionListener(e -> tambahProduk());
         editButton.addActionListener(e -> editProduk());
         deleteButton.addActionListener(e -> hapusProduk());
         drinkTable.getSelectionModel().addListSelectionListener(e -> isiFormDariTabel());
     }
 
-  
-
-
     private void loadProductData() {
         tableModel.setRowCount(0);
         for (Product p : products) {
-            tableModel.addRow(new Object[]{p.getCode(), p.getName(), p.getCategory(), p.getPrice(), p.getStock()});
+            tableModel.addRow(new Object[]{
+                p.getCode(), p.getName(), p.getCategory(), p.getPrice(), p.getStock()
+            });
         }
     }
 
     private void tambahProduk() {
+        String code = codeField.getText().trim();
+        if (code.isEmpty() || nameField.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Kode dan nama produk tidak boleh kosong.");
+            return;
+        }
+
+        for (Product existing : products) {
+            if (existing.getCode().equalsIgnoreCase(code)) {
+                JOptionPane.showMessageDialog(this, "Kode produk sudah ada.");
+                return;
+            }
+        }
+
         try {
             Product p = new Product(
                 products.size() + 1,
-                codeField.getText(),
-                nameField.getText(),
+                code,
+                nameField.getText().trim(),
                 (String) categoryField.getSelectedItem(),
                 Double.parseDouble(priceField.getText()),
                 Integer.parseInt(stockField.getText())
@@ -133,7 +149,7 @@ public class ProductForm extends JFrame {
             products.add(p);
             loadProductData();
             clearForm();
-            parent.refreshBanner(); 
+            parent.refreshBanner();
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "Harga dan stok harus berupa angka.");
         }
@@ -143,15 +159,28 @@ public class ProductForm extends JFrame {
         int selectedRow = drinkTable.getSelectedRow();
         if (selectedRow >= 0) {
             Product p = products.get(selectedRow);
-            p.setCode(codeField.getText());
-            p.setName(nameField.getText());
+            String newCode = codeField.getText().trim();
+            if (newCode.isEmpty() || nameField.getText().trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Kode dan nama produk tidak boleh kosong.");
+                return;
+            }
+
+            for (int i = 0; i < products.size(); i++) {
+                if (i != selectedRow && products.get(i).getCode().equalsIgnoreCase(newCode)) {
+                    JOptionPane.showMessageDialog(this, "Kode produk sudah digunakan di entri lain.");
+                    return;
+                }
+            }
+
+            p.setCode(newCode);
+            p.setName(nameField.getText().trim());
             p.setCategory((String) categoryField.getSelectedItem());
             try {
                 p.setPrice(Double.parseDouble(priceField.getText()));
                 p.setStock(Integer.parseInt(stockField.getText()));
                 loadProductData();
                 clearForm();
-                parent.refreshBanner(); 
+                parent.refreshBanner();
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(this, "Harga dan stok harus berupa angka.");
             }
@@ -163,10 +192,13 @@ public class ProductForm extends JFrame {
     private void hapusProduk() {
         int selectedRow = drinkTable.getSelectedRow();
         if (selectedRow >= 0) {
-            products.remove(selectedRow);
-            loadProductData();
-            clearForm();
-            parent.refreshBanner(); 
+            int confirm = JOptionPane.showConfirmDialog(this, "Yakin ingin menghapus produk ini?", "Konfirmasi", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                products.remove(selectedRow);
+                loadProductData();
+                clearForm();
+                parent.refreshBanner();
+            }
         } else {
             JOptionPane.showMessageDialog(this, "Pilih produk yang ingin dihapus.");
         }
