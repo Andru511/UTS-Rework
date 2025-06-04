@@ -1,9 +1,15 @@
 package com.mycompany.mavenproject3;
 
-import javax.swing.*;
-import java.awt.*;
-import java.util.List;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics;
 import java.util.ArrayList;
+import java.util.List;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
 
 public class Mavenproject3 extends JFrame implements Runnable {
     private String text;
@@ -11,10 +17,15 @@ public class Mavenproject3 extends JFrame implements Runnable {
     private int width;
     private BannerPanel bannerPanel;
     private JButton addProductButton;
+    private JButton addPenjualanButton;
+    private JButton customerButton; // ✅ Tambahan
     private List<Product> products;
+    private List<Penjualan> penjualanList;
+    
 
     public Mavenproject3(List<Product> products) {
         this.products = products;
+        this.penjualanList = new ArrayList<>();
         this.text = generateProductText(products);
 
         setTitle("WK. STI Chill");
@@ -28,11 +39,26 @@ public class Mavenproject3 extends JFrame implements Runnable {
 
         JPanel bottomPanel = new JPanel();
         addProductButton = new JButton("Kelola Produk");
+        addPenjualanButton = new JButton("Kelola Penjualan");
+        customerButton = new JButton("Customer"); // ✅ Tambahan
+
         bottomPanel.add(addProductButton);
+        bottomPanel.add(addPenjualanButton);
+        bottomPanel.add(customerButton); // ✅ Tambahan
+
         add(bottomPanel, BorderLayout.SOUTH);
 
+        // Event handler tombol
         addProductButton.addActionListener(e -> {
             new ProductForm(products, this).setVisible(true);
+        });
+
+        addPenjualanButton.addActionListener(e -> {
+            new PenjualanWindow(penjualanList, products, this).setVisible(true);
+        });
+
+        customerButton.addActionListener(e -> {
+            new CustomerForm().setVisible(true); // ✅ Pastikan class CustomerForm ada
         });
 
         setVisible(true);
@@ -85,6 +111,7 @@ public class Mavenproject3 extends JFrame implements Runnable {
         List<Product> products = new ArrayList<>();
         products.add(new Product(1, "P001", "Americano", "Coffee", 18000, 10));
         products.add(new Product(2, "P002", "Pandan Latte", "Coffee", 15000, 8));
+
         new Mavenproject3(products);
     }
 }
